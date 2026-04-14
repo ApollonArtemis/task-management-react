@@ -12,7 +12,7 @@ use App\Models\User;
 class TaskList extends Model
 {
     //
-    protected $table = 'LIST';
+    protected $table = 'LISTS';
     protected $primaryKey = 'nListID';
 
     protected $fillable = [
