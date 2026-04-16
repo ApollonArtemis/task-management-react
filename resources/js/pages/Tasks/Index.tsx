@@ -1,8 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, Calendar, List, CheckCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from '@inertiajs/react';
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, Calendar, List, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
 import {
@@ -17,7 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { edit } from '@/routes/profile';
 import AppLayout from '@/layouts/app-layout';
 
 declare function route(name: string, params?: any): string;
@@ -37,7 +34,7 @@ interface Task {
 
 interface List {
     nListID: number;
-    cListsTitle: string;
+    cListTitle: string; // fixed: was cListsTitle (extra 's')
 }
 
 interface Props {
@@ -61,14 +58,12 @@ interface Props {
     };
 }
 
-
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Tasks',
-        href: '/task',
+        href: '/tasks', // fixed: was '/task'
     },
 ];
-
 
 export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
     const [isOpen, setIsOpen] = useState(false);
@@ -77,14 +72,16 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [searchTerm, setSearchTerm] = useState(filters.search);
-    const [completionFilter, setCompletionFilter] = useState<'All' | 'Completed' | 'Pending'>(filters.filter as 'All' | 'Completed' | 'Pending');
+    const [completionFilter, setCompletionFilter] = useState<'All' | 'Completed' | 'Pending'>(
+        filters.filter as 'All' | 'Completed' | 'Pending'
+    );
 
     useEffect(() => {
-        if(flash?.success) {
+        if (flash?.success) {
             setToastMessage(flash.success);
             setToastType('success');
             setShowToast(true);
-        } else if(flash?.error) {
+        } else if (flash?.error) {
             setToastMessage(flash.error);
             setToastType('error');
             setShowToast(true);
@@ -92,14 +89,11 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
     }, [flash]);
 
     useEffect(() => {
-        if(showToast) {
-            const timer = setTimeout(() => {
-                setShowToast(false);
-            }, 3000);
+        if (showToast) {
+            const timer = setTimeout(() => setShowToast(false), 3000);
             return () => clearTimeout(timer);
         }
     }, [showToast]);
-
 
     const { data, setData, post, put, processing, reset, delete: destroy } = useForm({
         cTasksTitle: '',
@@ -109,27 +103,18 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
         bTasksCompleted: false as boolean,
     });
 
-
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if(editingTask) {
+        if (editingTask) {
             put(route('tasks.update', editingTask.nTaskID), {
-                onSuccess: () => {
-                    setIsOpen(false);
-                    reset();
-                    setEditingTask(null);
-                },
+                onSuccess: () => { setIsOpen(false); reset(); setEditingTask(null); },
             });
         } else {
             post(route('tasks.store'), {
-                onSuccess: () => {
-                    setIsOpen(false);
-                    reset();
-                },
+                onSuccess: () => { setIsOpen(false); reset(); },
             });
         }
     };
-
 
     const handleEdit = (task: Task) => {
         setEditingTask(task);
@@ -138,135 +123,156 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
             cTasksDescription: task.cTasksDescription || '',
             dTasksDueDate: task.dTasksDueDate || '',
             list_id: task.list_id.toString(),
-            bTasksCompleted: task.bTasksCompleted,
+            bTasksCompleted: Boolean(task.bTasksCompleted),
         });
         setIsOpen(true);
     };
 
-
     const handleDelete = (taskId: number) => {
         destroy(route('tasks.destroy', taskId));
     };
-
 
     const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         router.get(route('tasks.index'), {
             search: searchTerm,
             filter: completionFilter,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        }, { preserveState: true, preserveScroll: true });
     };
-
 
     const handleFilterChange = (value: 'All' | 'Completed' | 'Pending') => {
         setCompletionFilter(value);
         router.get(route('tasks.index'), {
             search: searchTerm,
             filter: value,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        }, { preserveState: true, preserveScroll: true });
     };
-
 
     const handlePageChange = (page: number) => {
         router.get(route('tasks.index'), {
             page,
             search: searchTerm,
             filter: completionFilter,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        }, { preserveState: true, preserveScroll: true });
     };
 
-
-    return(
+    return (
         <>
             <Head title='Tasks' />
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 bg-gradient-to-br from-background to-muted/20">
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
+
+                {/* Toast */}
                 {showToast && (
                     <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-4 shadow-lg ${
-                    toastType === 'success' ? 'bg-green-500'  : 'bg-red-500'} text-white animate-in fade-in slide-in-from-top-5`}>
-                        {toastType === 'success' ? (
-                            <CheckCircle2 className="h-5 w-5" />
-                        ) : (
-                            <XCircle className="h-5 w-5" />
-                        )}
+                        toastType === 'success' ? 'bg-green-500' : 'bg-red-500'
+                    } text-white`}>
+                        {toastType === 'success'
+                            ? <CheckCircle2 className="h-5 w-5" />
+                            : <XCircle className="h-5 w-5" />
+                        }
                         <span>{toastMessage}</span>
                     </div>
                 )}
 
+                {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
                         <p className="text-muted-foreground mt-1">Manage your tasks and stay organized.</p>
                     </div>
-                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                    <Dialog open={isOpen} onOpenChange={(open) => {
+                        setIsOpen(open);
+                        if (!open) { reset(); setEditingTask(null); } // reset on close
+                    }}>
                         <DialogTrigger asChild>
-                            <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg">
+                            <Button>
                                 <Plus className="h-4 w-4 mr-2" />
                                 New Task
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
-                                <DialogTitle className="text-xl">{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
+                                <DialogTitle>{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
                                 <DialogDescription>
                                     {editingTask
-                                    ? 'Update the details of your task.'
-                                    : 'Fill in the details to create a new task.'}
+                                        ? 'Update the details of your task.'
+                                        : 'Fill in the details to create a new task.'}
                                 </DialogDescription>
                             </DialogHeader>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-4 pt-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="cTasksTitle">Title</Label>
-                                    <Input id="cTasksTitle" value={data.cTasksTitle} onChange={(e) => setData('cTasksTitle', e.target.value)} required className="focus:ring-2 focus:ring-primary " />    
+                                    <Input
+                                        id="cTasksTitle"
+                                        value={data.cTasksTitle}
+                                        onChange={(e) => setData('cTasksTitle', e.target.value)}
+                                        placeholder="Enter task title"
+                                        required
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="cTasksDescription">Description</Label>
-                                    <Textarea id="cTasksDescription" value={data.cTasksDescription} onChange={(e) => setData('cTasksDescription', e.target.value)} className="focus:ring-2 focus:ring-primary " />
+                                    <Textarea
+                                        id="cTasksDescription"
+                                        value={data.cTasksDescription}
+                                        onChange={(e) => setData('cTasksDescription', e.target.value)}
+                                        placeholder="Enter task description"
+                                        rows={3}
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="list_id">List</Label>
                                     <Select value={data.list_id} onValueChange={(value) => setData('list_id', value)}>
-                                        <SelectTrigger className="focus:ring-2 focus:ring-primary">
+                                        <SelectTrigger>
                                             <SelectValue placeholder="Select a list" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {lists.map((list) => (
                                                 <SelectItem key={list.nListID} value={list.nListID.toString()}>
-                                                    {list.cListsTitle}
+                                                    {list.cListTitle} {/* fixed: was cListsTitle */}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
-
                                 <div className="space-y-2">
                                     <Label htmlFor="dTasksDueDate">Due Date</Label>
-                                    <Input id="dTasksDueDate" type="date" value={data.dTasksDueDate} onChange={(e) => setData('dTasksDueDate', e.target.value)} className="focus:ring-2 focus:ring-primary" />
+                                    <Input
+                                        id="dTasksDueDate"
+                                        type="date"
+                                        value={data.dTasksDueDate}
+                                        onChange={(e) => setData('dTasksDueDate', e.target.value)}
+                                    />
                                 </div>
-
-                                <div className="flex items-center space-x-2"/>
-                                <input type="checkbox" id="bTasksCompleted" checked={data.bTasksCompleted} onChange={(e) => setData('bTasksCompleted', e.target.checked)} className="h-4 w-4 rounded border-gray-300 focus:ring-2 focus:ring-primary" />
-                                <Label htmlFor="bTasksCompleted">Completed</Label>
-                                <Button type="submit" disabled={processing} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg">
-                                        {editingTask ? 'Update' : 'Create' }
+                                {/* fixed: was a self-closing div causing checkbox/label to float outside form */}
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="bTasksCompleted"
+                                        checked={data.bTasksCompleted}
+                                        onChange={(e) => setData('bTasksCompleted', e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <Label htmlFor="bTasksCompleted">Completed</Label>
+                                </div>
+                                <Button type="submit" disabled={processing} className="w-full">
+                                    {editingTask ? 'Update' : 'Create'}
                                 </Button>
                             </form>
                         </DialogContent>
                     </Dialog>
                 </div>
 
-                <div className="flex gap-4 mb-4">
+                {/* Search & Filter */}
+                <div className="flex gap-4">
                     <form onSubmit={handleSearch} className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform-translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search tasks..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                        />
                     </form>
                     <Select value={completionFilter} onValueChange={handleFilterChange}>
                         <SelectTrigger className="w-[180px]">
@@ -279,31 +285,38 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
                         </SelectContent>
                     </Select>
                 </div>
-                
+
+                {/* Table */}
                 <div className="rounded-md border">
                     <div className="relative w-full overflow-auto">
                         <table className="w-full caption-bottom text-sm">
                             <thead className="[&_tr]:border-b">
-                                <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                <tr className="border-b transition-colors hover:bg-muted/50">
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Title</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Description</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">List</th>
+                                    {/* fixed: added List column header to match the 6 tds */}
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Due Date</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="[&_tr:last_child]:border-0 ">
+                            <tbody className="[&_tr:last-child]:border-0">
                                 {tasks.data.map((task) => (
-                                    <tr key={task.nTaskID} className="border-b transition-colors hover:bg-muted/50 data=[state=selected]:bg-muted">
+                                    <tr key={task.nTaskID} className="border-b transition-colors hover:bg-muted/50">
                                         <td className="p-4 align-middle font-medium">{task.cTasksTitle}</td>
-                                        <td className="p-4 align-middle max-w[200px] truncate">{task.cTasksDescription || 'No description'}</td>
-                                        <td className="p-4 align-middle ">
+                                        <td className="p-4 align-middle max-w-[200px] truncate">
+                                            {task.cTasksDescription || 'No description'}
+                                        </td>
+                                        <td className="p-4 align-middle">
+                                            {/* fixed: List column now correctly shows list name */}
                                             <div className="flex items-center gap-2">
                                                 <List className="h-4 w-4 text-muted-foreground" />
                                                 {task.list?.cListTitle}
                                             </div>
                                         </td>
                                         <td className="p-4 align-middle">
+                                            {/* fixed: Due Date column now correctly shows due date */}
                                             {task.dTasksDueDate ? (
                                                 <div className="flex items-center gap-2">
                                                     <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -325,12 +338,13 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="p-4 align-middle text-right">
-                                            <div className="flex justify-end gap-2 ">
+                                        <td className="p-4 align-middle">
+                                            <div className="flex gap-2">
                                                 <Button variant="ghost" size="icon" onClick={() => handleEdit(task)} className="hover:bg-primary/10 hover:text-primary">
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(task.nTaskID)} className="hover:bg-desctructive/10 hover:text-desctructive">
+                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(task.nTaskID)} className="hover:bg-destructive/10 hover:text-destructive">
+                                                    {/* fixed: was 'desctructive' typo */}
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
@@ -339,7 +353,9 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
                                 ))}
                                 {tasks.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="p-4 text-center text-muted-foreground">No tasks found.</td>
+                                        <td colSpan={6} className="p-4 text-center text-muted-foreground">
+                                            No tasks found.
+                                        </td>
                                     </tr>
                                 )}
                             </tbody>
@@ -353,22 +369,38 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props) {
                         Showing {tasks.from} to {tasks.to} of {tasks.total} results
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="icon" onClick={() => handlePageChange(tasks.current_page - 1)} disabled={tasks.current_page == 1}>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handlePageChange(tasks.current_page - 1)}
+                            disabled={tasks.current_page === 1}
+                        >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <div className="flex items-center space-x-1">
-                            {Array.from({ length: tasks.last_page }, (_, i) => i + 1).map((page)=> (
-                                <Button key={page} variant={page === tasks.current_page ? "default" : "outline"} size="icon" onClick={() => handlePageChange(page)}>
+                            {Array.from({ length: tasks.last_page }, (_, i) => i + 1).map((page) => (
+                                <Button
+                                    key={page}
+                                    variant={page === tasks.current_page ? 'default' : 'outline'}
+                                    size="icon"
+                                    onClick={() => handlePageChange(page)}
+                                >
                                     {page}
                                 </Button>
                             ))}
                         </div>
-                        <Button variant="outline" size="icon" onClick={() => handlePageChange(tasks.current_page + 1)} disabled={tasks.current_page === tasks.last_page}>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handlePageChange(tasks.current_page + 1)}
+                            disabled={tasks.current_page === tasks.last_page}
+                        >
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
+
             </div>
         </>
-    )
+    );
 }
